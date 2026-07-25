@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import type { MoodLevel } from '../../types';
-import { Frown, Meh, Smile, AlertTriangle, Zap, Check, Sparkles } from 'lucide-react';
+import { Frown, Meh, Smile, AlertTriangle, Zap, Check, CheckCircle2, MessageSquare } from 'lucide-react';
 
 interface MoodOption {
   level: MoodLevel;
@@ -30,54 +30,112 @@ export const MoodCheckIn: React.FC<MoodCheckInProps> = ({ onMoodLogged }) => {
   const { logCheckIn } = useAppContext();
   const [selectedMood, setSelectedMood] = useState<MoodOption | null>(null);
   const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
-  const [submitted, setSubmitted] = useState(false);
+  const [note, setNote] = useState('');
+  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [lastLoggedMessage, setLastLoggedMessage] = useState<string | null>(null);
 
-  const toggleTrigger = (tag: string) => {
-    setSelectedTriggers((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-  };
+  const handleMoodSelect = (option: MoodOption) => {
+    // Mobile touch haptic feedback if supported
+    if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate(40);
+      } catch {
+        // ignore
+      }
+    }
 
-  const handleSubmit = () => {
-    if (!selectedMood) return;
-    logCheckIn(selectedMood.level, selectedMood.label, selectedTriggers);
-    setSubmitted(true);
+    setSelectedMood(option);
+
+    // INSTANT LOGGING on single tap
+    logCheckIn(option.level, option.label, selectedTriggers, note.trim() || undefined);
+
+    // Immediate visual feedback message
+    setLastLoggedMessage(`${option.label} (${option.level}/10)`);
+
+    // Trigger parent callback (e.g. to show AI Friend quote immediately)
     if (onMoodLogged) {
       onMoodLogged();
     }
-    setTimeout(() => {
-      setSubmitted(false);
-      setSelectedMood(null);
-      setSelectedTriggers([]);
-    }, 2500);
+  };
+
+  const toggleTrigger = (tag: string) => {
+    const updatedTriggers = selectedTriggers.includes(tag)
+      ? selectedTriggers.filter((t) => t !== tag)
+      : [...selectedTriggers, tag];
+
+    setSelectedTriggers(updatedTriggers);
+
+    // Re-log check-in immediately if a mood is active
+    if (selectedMood) {
+      logCheckIn(selectedMood.level, selectedMood.label, updatedTriggers, note.trim() || undefined);
+      setLastLoggedMessage(`${selectedMood.label} (${selectedMood.level}/10)`);
+      if (onMoodLogged) onMoodLogged();
+    }
+  };
+
+  const handleNoteSave = () => {
+    if (selectedMood) {
+      logCheckIn(selectedMood.level, selectedMood.label, selectedTriggers, note.trim() || undefined);
+      setLastLoggedMessage(`${selectedMood.label} (${selectedMood.level}/10)`);
+      if (onMoodLogged) onMoodLogged();
+    }
   };
 
   return (
-    <div className="bg-slate-800/90 backdrop-blur-md p-6 rounded-3xl border border-slate-700/60 shadow-lg space-y-6">
-      <div className="text-center space-y-1">
-        <h2 className="text-2xl font-bold text-slate-50 tracking-tight">Zero-Typing Check-in</h2>
-        <p className="text-sm text-slate-400">Select how you feel & tap contextual triggers</p>
+    <div className="bg-slate-800/90 backdrop-blur-md p-5 sm:p-6 rounded-3xl border border-slate-700/60 shadow-lg space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold text-slate-300 tracking-wide">
+          How do you feel right now?
+        </span>
+        {lastLoggedMessage && (
+          <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-medium animate-in fade-in zoom-in-95 duration-300">
+            <Check className="w-3 h-3 text-emerald-400" />
+            <span>Logged</span>
+          </span>
+        )}
       </div>
 
-      {/* Mood Selector */}
-      <div className="grid grid-cols-5 gap-2 sm:gap-4">
+      {/* Prominent Visual Feedback Banner when Logged */}
+      {lastLoggedMessage && (
+        <div className="p-3.5 bg-emerald-500/15 border border-emerald-500/40 rounded-2xl text-emerald-200 text-xs sm:text-sm font-semibold flex items-center justify-between shadow-[0_0_15px_rgba(16,185,129,0.15)] animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="flex items-center space-x-2.5">
+            <div className="p-1.5 bg-emerald-500/30 rounded-xl">
+              <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+            </div>
+            <span>Check-in Recorded: <strong>{lastLoggedMessage}</strong></span>
+          </div>
+          <span className="text-[10px] text-emerald-300 uppercase tracking-wider font-bold bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-500/30">
+            Synced Live
+          </span>
+        </div>
+      )}
+
+      {/* Mood Selector - 3 Columns with Mobile Touch Optimizations */}
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
         {MOOD_OPTIONS.map((option) => {
           const Icon = option.icon;
           const isSelected = selectedMood?.label === option.label;
           return (
             <button
               key={option.label}
-              onClick={() => setSelectedMood(option)}
-              className={`flex flex-col items-center p-3 rounded-2xl border transition-all duration-300 ease-spring ${
+              type="button"
+              onClick={() => handleMoodSelect(option)}
+              className={`flex flex-col items-center justify-center p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 cursor-pointer select-none active:scale-95 touch-manipulation ${
                 isSelected
-                  ? `${option.bgColor} ${option.borderColor} ring-2 ring-emerald-400/50 scale-105 shadow-md`
-                  : 'bg-slate-900/40 border-slate-700/40 hover:bg-slate-700/40 hover:scale-102'
+                  ? `${option.bgColor} ${option.borderColor} ring-2 ring-emerald-400/60 scale-102 shadow-lg shadow-emerald-500/10`
+                  : 'bg-slate-900/50 border-slate-700/50 hover:bg-slate-700/50 hover:border-slate-600'
               }`}
             >
-              <div className={`p-2.5 rounded-xl ${option.bgColor} ${option.textColor}`}>
-                <Icon className="w-6 h-6 sm:w-8 sm:h-8" />
+              <div className={`p-2.5 sm:p-3 rounded-2xl ${option.bgColor} ${option.textColor} transition-transform duration-200 relative`}>
+                <Icon className="w-7 h-7 sm:w-8 sm:h-8" />
+                {isSelected && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400 text-slate-950 rounded-full flex items-center justify-center font-bold text-[10px]">
+                    ✓
+                  </span>
+                )}
               </div>
-              <span className={`mt-2 text-xs font-semibold ${isSelected ? option.textColor : 'text-slate-300'}`}>
+              <span className={`mt-2 text-xs sm:text-sm font-bold tracking-tight ${isSelected ? option.textColor : 'text-slate-200'}`}>
                 {option.label}
               </span>
             </button>
@@ -85,20 +143,32 @@ export const MoodCheckIn: React.FC<MoodCheckInProps> = ({ onMoodLogged }) => {
         })}
       </div>
 
-      {/* Trigger Tags & Submit */}
+      {/* Optional Triggers & Personal Note */}
       {selectedMood && (
-        <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 pt-2 border-t border-slate-700/50">
-          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider block text-center">
-            What is contributing to this feeling? (Quick-Tap Tags)
-          </label>
+        <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 pt-3 border-t border-slate-700/50">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider block">
+              What is contributing? (Optional Tags)
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowNoteInput(!showNoteInput)}
+              className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-medium transition-colors cursor-pointer"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>{showNoteInput ? 'Hide Note' : '+ Add Note'}</span>
+            </button>
+          </div>
+
           <div className="flex flex-wrap justify-center gap-2">
             {QUICK_TAGS.map((tag) => {
               const isActive = selectedTriggers.includes(tag);
               return (
                 <button
                   key={tag}
+                  type="button"
                   onClick={() => toggleTrigger(tag)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 ${
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 touch-manipulation active:scale-95 cursor-pointer ${
                     isActive
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_8px_rgba(16,185,129,0.25)] scale-105'
                       : 'bg-slate-900/50 text-slate-400 border-slate-700/50 hover:bg-slate-700/50 hover:text-slate-200'
@@ -111,26 +181,19 @@ export const MoodCheckIn: React.FC<MoodCheckInProps> = ({ onMoodLogged }) => {
             })}
           </div>
 
-          <div className="pt-2 flex justify-center">
-            <button
-              onClick={handleSubmit}
-              disabled={submitted}
-              className={`w-full sm:w-auto px-8 py-3 rounded-2xl font-semibold text-sm transition-all duration-300 ease-spring shadow-lg flex items-center justify-center space-x-2 ${
-                submitted
-                  ? 'bg-emerald-500 text-slate-950 shadow-emerald-500/30'
-                  : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 hover:scale-105 active:scale-95 shadow-emerald-500/20'
-              }`}
-            >
-              {submitted ? (
-                <>
-                  <Sparkles className="w-4 h-4 animate-spin" />
-                  <span>Check-in Logged!</span>
-                </>
-              ) : (
-                <span>Confirm Check-in</span>
-              )}
-            </button>
-          </div>
+          {/* Optional Note Field */}
+          {showNoteInput && (
+            <div className="space-y-2 animate-in fade-in duration-200">
+              <input
+                type="text"
+                placeholder="Write a brief personal note for your caregiver or yourself..."
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                onBlur={handleNoteSave}
+                className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all"
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -127,9 +127,17 @@ export const Navbar: React.FC = () => {
             {isMobileMenuOpen ? <X className="w-6 h-6 text-emerald-400" /> : <Menu className="w-6 h-6 text-emerald-400" />}
           </button>
 
-          {/* Mobile Hamburger Dropdown Menu Drawer */}
+          {/* Mobile Hamburger Dropdown Menu Drawer with Fullscreen Backdrop Blur */}
           {isMobileMenuOpen && (
-            <div className="absolute top-16 right-4 w-[calc(100vw-2rem)] max-w-sm bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-3xl p-5 shadow-2xl space-y-4 z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+            <>
+              {/* Fullscreen Blurred Backdrop */}
+              <div 
+                className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-40 animate-in fade-in duration-200"
+                onClick={() => setIsMobileMenuOpen(false)}
+              />
+
+              {/* Drawer Card */}
+              <div className="absolute top-16 right-4 w-[calc(100vw-2rem)] max-w-sm bg-slate-900 border border-slate-700/80 rounded-3xl p-5 shadow-2xl space-y-4 z-50 animate-in fade-in slide-in-from-top-2 duration-300">
               {/* User Header */}
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center space-x-2.5">
@@ -178,6 +186,7 @@ export const Navbar: React.FC = () => {
                 <span>Log Out</span>
               </button>
             </div>
+          </>
           )}
         </div>
       </nav>

@@ -129,78 +129,80 @@ export const MoodCheckIn: React.FC<MoodCheckInProps> = ({ onMoodLogged }) => {
         })}
       </div>
 
-      {/* Optional Triggers, Personal Note & Confirm Submit Button */}
+      {/* Confirm Button: Shown immediately after any tile is selected */}
       {selectedMood && (
-        <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 pt-3 border-t border-slate-700/50">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider block">
-              What is contributing? (Optional Tags)
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowNoteInput(!showNoteInput)}
-              className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-medium transition-colors cursor-pointer"
-            >
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>{showNoteInput ? 'Hide Note' : '+ Add Note'}</span>
-            </button>
-          </div>
+        <div className="pt-3 border-t border-slate-700/50 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
 
-          <div className="flex flex-wrap justify-center gap-2">
-            {QUICK_TAGS.map((tag) => {
-              const isActive = selectedTriggers.includes(tag);
-              return (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={() => toggleTrigger(tag)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 touch-manipulation active:scale-95 cursor-pointer ${
-                    isActive
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_8px_rgba(16,185,129,0.25)] scale-105'
-                      : 'bg-slate-900/50 text-slate-400 border-slate-700/50 hover:bg-slate-700/50 hover:text-slate-200'
-                  }`}
-                >
-                  {isActive && <Check className="w-3 h-3 inline mr-1" />}
-                  {tag}
-                </button>
-              );
-            })}
-          </div>
+          {/* Primary Submit Button - always visible right below tiles */}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitted}
+            className={`w-full px-6 py-4 rounded-2xl font-bold text-base transition-all duration-300 shadow-lg flex items-center justify-center gap-2.5 touch-manipulation cursor-pointer ${
+              submitted
+                ? 'bg-emerald-500 text-slate-950 shadow-emerald-500/30'
+                : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 active:scale-[0.98] shadow-emerald-500/30'
+            }`}
+          >
+            {submitted ? (
+              <>
+                <CheckCircle2 className="w-5 h-5" />
+                <span>Check-in Recorded!</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-5 h-5" />
+                <span>Confirm Check-in — {selectedMood.label}</span>
+              </>
+            )}
+          </button>
 
-          {/* Optional Note Field */}
-          {showNoteInput && (
-            <div className="space-y-2 animate-in fade-in duration-200">
+          {/* Optional Tags & Note Section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+                Add context (optional)
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowNoteInput(!showNoteInput)}
+                className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-medium transition-colors cursor-pointer"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>{showNoteInput ? 'Hide Note' : '+ Add Note'}</span>
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {QUICK_TAGS.map((tag) => {
+                const isActive = selectedTriggers.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => toggleTrigger(tag)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 touch-manipulation active:scale-95 cursor-pointer ${
+                      isActive
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_8px_rgba(16,185,129,0.2)]'
+                        : 'bg-slate-900/50 text-slate-400 border-slate-700/50 hover:bg-slate-700/50 hover:text-slate-200'
+                    }`}
+                  >
+                    {isActive && <Check className="w-3 h-3 inline mr-1" />}
+                    {tag}
+                  </button>
+                );
+              })}
+            </div>
+
+            {showNoteInput && (
               <input
                 type="text"
-                placeholder="Write a brief personal note for your caregiver or yourself..."
+                placeholder="Add a personal note for your caregiver..."
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                className="w-full px-4 py-3 bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all shadow-inner"
+                className="w-full px-4 py-3 bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all animate-in fade-in duration-200"
               />
-            </div>
-          )}
-
-          {/* Explicit Submit Button */}
-          <div className="pt-2 flex justify-center">
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={submitted}
-              className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl font-bold text-sm transition-all duration-300 ease-spring shadow-lg flex items-center justify-center space-x-2 cursor-pointer ${
-                submitted
-                  ? 'bg-emerald-500 text-slate-950 shadow-emerald-500/30'
-                  : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 hover:scale-[1.02] active:scale-[0.98] shadow-emerald-500/25'
-              }`}
-            >
-              {submitted ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Check-in Recorded!</span>
-                </>
-              ) : (
-                <span>Confirm Check-in</span>
-              )}
-            </button>
+            )}
           </div>
         </div>
       )}

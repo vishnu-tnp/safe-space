@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "safe-space-app"
-  }
+    "default": "safe-space-ms"
+  },
+  "targets": {},
+  "etags": {}
 }

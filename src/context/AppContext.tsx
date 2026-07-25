@@ -545,7 +545,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
 
     setMoodState(newCheckIn);
-    setCheckInHistory((prev) => [newCheckIn, ...prev]);
+    try {
+      localStorage.setItem(STORAGE_KEYS.MOOD_STATE, JSON.stringify(newCheckIn));
+    } catch (e) {
+      console.warn('LocalStorage save error:', e);
+    }
+
+    setCheckInHistory((prev) => {
+      const updated = [newCheckIn, ...prev];
+      try {
+        localStorage.setItem(STORAGE_KEYS.CHECK_IN_HISTORY, JSON.stringify(updated));
+      } catch (e) {
+        console.warn('LocalStorage save error:', e);
+      }
+      return updated;
+    });
 
     const patientUid = userProfile?.uid || 'patient-demo-uid';
     if (db) {
@@ -562,11 +576,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const yesterdayStr = yesterday.toISOString().split('T')[0];
         newStreak = prev.lastCheckInDate === yesterdayStr ? newStreak + 1 : 1;
       }
-      return {
+      const updatedStreak = {
         currentStreak: newStreak,
         lastCheckInDate: todayStr,
         totalCheckIns: prev.totalCheckIns + 1,
       };
+      try {
+        localStorage.setItem(STORAGE_KEYS.STREAK_DATA, JSON.stringify(updatedStreak));
+      } catch (e) {
+        console.warn('LocalStorage save error:', e);
+      }
+      return updatedStreak;
     });
 
     broadcastSync();
@@ -580,7 +600,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       durationSeconds,
       completedAt: new Date().toISOString(),
     };
-    setGroundingHistory((prev) => [newSession, ...prev]);
+    setGroundingHistory((prev) => {
+      const updated = [newSession, ...prev];
+      try {
+        localStorage.setItem(STORAGE_KEYS.GROUNDING_HISTORY, JSON.stringify(updated));
+      } catch (e) {
+        console.warn('LocalStorage save error:', e);
+      }
+      return updated;
+    });
 
     const patientUid = userProfile?.uid || 'patient-demo-uid';
     if (db) {
@@ -601,6 +629,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       note: note || 'Patient requested support connect',
     };
     setActiveAlert(alert);
+    try {
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_ALERT, JSON.stringify(alert));
+    } catch (e) {
+      console.warn('LocalStorage save error:', e);
+    }
 
     const patientUid = userProfile?.uid || 'patient-demo-uid';
     if (db) {
@@ -617,6 +650,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (activeAlert) {
       const resolvedAlert: EmergencyAlert = { ...activeAlert, status: 'resolved' };
       setActiveAlert(null);
+      try {
+        localStorage.removeItem(STORAGE_KEYS.ACTIVE_ALERT);
+      } catch (e) {
+        console.warn('LocalStorage remove error:', e);
+      }
 
       const patientUid =
         userProfile?.role === 'caregiver'

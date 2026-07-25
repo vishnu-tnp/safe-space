@@ -32,10 +32,10 @@ export const MoodCheckIn: React.FC<MoodCheckInProps> = ({ onMoodLogged }) => {
   const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
   const [note, setNote] = useState('');
   const [showNoteInput, setShowNoteInput] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [lastLoggedMessage, setLastLoggedMessage] = useState<string | null>(null);
 
   const handleMoodSelect = (option: MoodOption) => {
-    // Mobile touch haptic feedback if supported
     if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
       try {
         navigator.vibrate(40);
@@ -43,42 +43,28 @@ export const MoodCheckIn: React.FC<MoodCheckInProps> = ({ onMoodLogged }) => {
         // ignore
       }
     }
-
     setSelectedMood(option);
-
-    // INSTANT LOGGING on single tap
-    logCheckIn(option.level, option.label, selectedTriggers, note.trim() || undefined);
-
-    // Immediate visual feedback message
-    setLastLoggedMessage(`${option.label} (${option.level}/10)`);
-
-    // Trigger parent callback (e.g. to show AI Friend quote immediately)
-    if (onMoodLogged) {
-      onMoodLogged();
-    }
   };
 
   const toggleTrigger = (tag: string) => {
-    const updatedTriggers = selectedTriggers.includes(tag)
-      ? selectedTriggers.filter((t) => t !== tag)
-      : [...selectedTriggers, tag];
-
-    setSelectedTriggers(updatedTriggers);
-
-    // Re-log check-in immediately if a mood is active
-    if (selectedMood) {
-      logCheckIn(selectedMood.level, selectedMood.label, updatedTriggers, note.trim() || undefined);
-      setLastLoggedMessage(`${selectedMood.label} (${selectedMood.level}/10)`);
-      if (onMoodLogged) onMoodLogged();
-    }
+    setSelectedTriggers((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
   };
 
-  const handleNoteSave = () => {
-    if (selectedMood) {
-      logCheckIn(selectedMood.level, selectedMood.label, selectedTriggers, note.trim() || undefined);
-      setLastLoggedMessage(`${selectedMood.label} (${selectedMood.level}/10)`);
-      if (onMoodLogged) onMoodLogged();
+  const handleSubmit = () => {
+    if (!selectedMood) return;
+    logCheckIn(selectedMood.level, selectedMood.label, selectedTriggers, note.trim() || undefined);
+    setSubmitted(true);
+    setLastLoggedMessage(`${selectedMood.label} (${selectedMood.level}/10)`);
+
+    if (onMoodLogged) {
+      onMoodLogged();
     }
+
+    setTimeout(() => {
+      setSubmitted(false);
+    }, 2500);
   };
 
   return (
@@ -91,7 +77,7 @@ export const MoodCheckIn: React.FC<MoodCheckInProps> = ({ onMoodLogged }) => {
         {lastLoggedMessage && (
           <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-medium animate-in fade-in zoom-in-95 duration-300">
             <Check className="w-3 h-3 text-emerald-400" />
-            <span>Logged</span>
+            <span>Recorded</span>
           </span>
         )}
       </div>
@@ -103,7 +89,7 @@ export const MoodCheckIn: React.FC<MoodCheckInProps> = ({ onMoodLogged }) => {
             <div className="p-1.5 bg-emerald-500/30 rounded-xl">
               <CheckCircle2 className="w-4 h-4 text-emerald-300" />
             </div>
-            <span>Check-in Recorded: <strong>{lastLoggedMessage}</strong></span>
+            <span>Check-in Logged: <strong>{lastLoggedMessage}</strong></span>
           </div>
           <span className="text-[10px] text-emerald-300 uppercase tracking-wider font-bold bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-500/30">
             Synced Live
@@ -111,7 +97,7 @@ export const MoodCheckIn: React.FC<MoodCheckInProps> = ({ onMoodLogged }) => {
         </div>
       )}
 
-      {/* Mood Selector - 3 Columns with Mobile Touch Optimizations */}
+      {/* Mood Selector - 3 Columns with Touch Optimization */}
       <div className="grid grid-cols-3 gap-3 sm:gap-4">
         {MOOD_OPTIONS.map((option) => {
           const Icon = option.icon;
@@ -143,7 +129,7 @@ export const MoodCheckIn: React.FC<MoodCheckInProps> = ({ onMoodLogged }) => {
         })}
       </div>
 
-      {/* Optional Triggers & Personal Note */}
+      {/* Optional Triggers, Personal Note & Confirm Submit Button */}
       {selectedMood && (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 pt-3 border-t border-slate-700/50">
           <div className="flex items-center justify-between">
@@ -189,11 +175,33 @@ export const MoodCheckIn: React.FC<MoodCheckInProps> = ({ onMoodLogged }) => {
                 placeholder="Write a brief personal note for your caregiver or yourself..."
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                onBlur={handleNoteSave}
-                className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition-all"
+                className="w-full px-4 py-3 bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all shadow-inner"
               />
             </div>
           )}
+
+          {/* Explicit Submit Button */}
+          <div className="pt-2 flex justify-center">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitted}
+              className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl font-bold text-sm transition-all duration-300 ease-spring shadow-lg flex items-center justify-center space-x-2 cursor-pointer ${
+                submitted
+                  ? 'bg-emerald-500 text-slate-950 shadow-emerald-500/30'
+                  : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 hover:scale-[1.02] active:scale-[0.98] shadow-emerald-500/25'
+              }`}
+            >
+              {submitted ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Check-in Recorded!</span>
+                </>
+              ) : (
+                <span>Confirm Check-in</span>
+              )}
+            </button>
+          </div>
         </div>
       )}
     </div>

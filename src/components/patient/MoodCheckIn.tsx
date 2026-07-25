@@ -22,7 +22,11 @@ const MOOD_OPTIONS: MoodOption[] = [
 
 const QUICK_TAGS = ['Stress', 'Sleep', 'Loneliness', 'Conflict', 'Craving'];
 
-export const MoodCheckIn: React.FC = () => {
+interface MoodCheckInProps {
+  onMoodLogged?: () => void;
+}
+
+export const MoodCheckIn: React.FC<MoodCheckInProps> = ({ onMoodLogged }) => {
   const { logCheckIn } = useAppContext();
   const [selectedMood, setSelectedMood] = useState<MoodOption | null>(null);
   const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
@@ -38,6 +42,9 @@ export const MoodCheckIn: React.FC = () => {
     if (!selectedMood) return;
     logCheckIn(selectedMood.level, selectedMood.label, selectedTriggers);
     setSubmitted(true);
+    if (onMoodLogged) {
+      onMoodLogged();
+    }
     setTimeout(() => {
       setSubmitted(false);
       setSelectedMood(null);

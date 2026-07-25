@@ -16,7 +16,7 @@
 - **Frontend Core:** React 19, Vite, TypeScript
 - **Styling & Motion:** Tailwind CSS v4, Lucide React Icons, CSS custom spring transitions
 - **State Management:** React Context API (`AppContext.tsx`) with local persistence fallbacks
-- **AI Engine:** Google Gemini API (`Gemini 1.5 Flash` / `Gemini 3.1 Flash`) via `src/services/gemini.ts`
+- **AI Engine:** Google Gemini API (`@google/generative-ai` with candidate model fallback across `gemini-flash-latest`, `gemini-3.6-flash`, `gemini-3.5-flash`, structured JSON outputs, and offline cache fallbacks) via `src/services/gemini.ts`
 - **Backend & Realtime Sync:** Firebase Firestore (Realtime snapshot listeners) & Firebase Auth (optional/anonymous)
 - **Deployment:** Firebase Hosting / Vercel
 
@@ -100,7 +100,9 @@ export interface CaregiverGuidance {
   dos: string[];
   donts: string[];
   script: string;
-  recommendedAction: string;
+  recommendedAction?: string;
+  isAiGenerated?: boolean;
+  isFallback?: boolean;
 }
 
 export interface EmergencyAlert {
